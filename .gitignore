@@ -1,0 +1,6 @@
+pbl-output/
+__pycache__/
+*.pyc
+.DS_Store
+*.skill
+.teachany-pbl-workspace/

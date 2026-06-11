@@ -1,0 +1,23 @@
+{
+  "skill_name": "teachany-pbl",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "用 teachany 帮我拆一个 PBL：初中班级研学路线，要包含预算和安全预案，4周完成",
+      "expected_output": "PNG 长图 + teachany.cn/pbl 编辑链接，grade=junior",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "家庭购车对比新能源和燃油车，高中跨学科，产出决策表",
+      "expected_output": "PNG + edit URL，grade=senior，deliverable=decision-table",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "水火箭项目式学习，要拆知识路径，初二科学",
+      "expected_output": "PNG + edit URL，不手写知识点列表",
+      "files": []
+    }
+  ]
+}
