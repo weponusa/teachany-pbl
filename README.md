@@ -16,7 +16,7 @@ git clone https://github.com/weponusa/teachany-pbl.git
 
 **Cursor**：复制或链接到 `~/.cursor/skills/teachany-pbl/`（目录内应含 `SKILL.md`）。
 
-**Claude Code**：同上，或安装打包的 `.skill` 文件（见 Releases）。
+**Claude Code**：同上，或下载 [teachany-pbl.skill](https://github.com/weponusa/teachany-pbl/releases/latest) 安装。
 
 ## 依赖
 
