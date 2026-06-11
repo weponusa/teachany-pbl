@@ -26,10 +26,13 @@ The decomposition uses TeachAny's six-stage pipeline on teachany.cn (LLM + curri
 
 Alternatives: clone [github.com/weponusa/teachany-pbl](https://github.com/weponusa/teachany-pbl) into Cursor `~/.cursor/skills/teachany-pbl/`, or install the `.skill` release package.
 
-## Workflow
+## Workflow（必须执行，禁止手搓图谱）
+
+**CRITICAL**: You MUST run `scripts/pbl-decompose.py` via Playwright against teachany.cn.  
+**NEVER** invent knowledge nodes, simplified bullet lists, or `?goal=` links as the primary deliverable — that is NOT TeachAny PBL.
 
 1. Parse the user's project task and optional fields (see [references/parameters.md](references/parameters.md)).
-2. Run the bundled CLI from **this skill directory** (where `SKILL.md` lives):
+2. **Always** run the bundled CLI from **this skill directory** (where `SKILL.md` lives):
 
 ```bash
 python3 scripts/pbl-decompose.py \
@@ -39,8 +42,12 @@ python3 scripts/pbl-decompose.py \
 ```
 
 3. On first run, install deps if missing: `pip install playwright && playwright install chromium`
-4. Reply with the PNG path, node counts from JSON, and **edit_url** from CLI output (prefer `?handoff=` links; never include `auto=1` in links you give users).
-5. If Playwright fails, follow [references/fallback.md](references/fallback.md) — still return an edit link.
+4. Read `{output}/<slug>.json` — reply with:
+   - PNG path from `image`
+   - `summary.nodeCount`, `summary.hasBlueprint`
+   - **`edit_url` must contain `?handoff=`** (or `?pbl=`). If only `?goal=`, report handoff failure and retry CLI once.
+5. Show the PNG in chat when supported — this is the full report (结构化拆解 + 路径 + 图谱), not a self-written summary.
+6. Only if Playwright is impossible after retry, follow [references/fallback.md](references/fallback.md) and explicitly say the user must click「拆解项目路径」on the site.
 
 ## Output template
 
@@ -61,7 +68,7 @@ Show the PNG in chat when the environment supports images.
 
 ## Why not hand-write the graph?
 
-TeachAny matches nodes against multi-curriculum indexes, runs relevance review, and builds dependency edges. A plain LLM list misses课标对齐 and produces fake node IDs.
+TeachAny runs a six-stage server pipeline (decompose → filter → match → verify → graph). A plain LLM reply or `?goal=` link shows the **empty form page** — not the finished project. The CLI waits for the full page render and saves a `?handoff=` link so users land on the **completed** editor.
 
 ## Examples
 
