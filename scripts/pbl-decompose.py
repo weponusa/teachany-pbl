@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """
-TeachAny PBL 拆解 CLI — teachany-pbl skill bundled script
+TeachAny PBL 拆解 CLI — 供 Cursor Skill / 自动化调用
 
-输入 PBL 任务 → 调用 www.teachany.cn PBL 引擎 → PNG 长图 + 编辑链接
+输入 PBL 任务基本信息 → 调用线上 PBL 引擎拆解 → 输出长图 PNG + 可继续编辑的 TeachAny 链接
 
-依赖:
+依赖（首次使用）:
     pip install playwright
     playwright install chromium
+
+示例:
+    python3 scripts/pbl-decompose.py --goal "设计一款水火箭并完成安全发射"
+    python3 scripts/pbl-decompose.py --goal "家庭购车对比" --grade senior --deliverable decision-table -o ./out
+    python3 scripts/pbl-decompose.py --goal "研学路线规划" --grade junior --subject geography --duration "4周"
 """
 from __future__ import annotations
 
@@ -69,7 +74,7 @@ def build_edit_url(args: argparse.Namespace) -> str:
         params["duration"] = args.duration
     if args.constraints:
         params["constraints"] = args.constraints
-    base = (args.base_url or DEFAULT_BASE).split("?")[0].replace("/pbl.html", "/pbl")
+    base = (args.base_url or DEFAULT_BASE).split("?")[0]
     return f"{base}?{urlencode(params)}" if params else base
 
 
@@ -82,14 +87,14 @@ async def run_decompose(args: argparse.Namespace) -> dict:
         raise SystemExit(2)
 
     analyze_url = build_pbl_url(args)
-    edit_url = build_edit_url(args)
+    edit_url = build_edit_url(args)  # fallback if page handoff fails
     out_dir = Path(args.output or ".").resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     png_path = out_dir / f"{slugify(args.goal)}.png"
     meta_path = out_dir / f"{slugify(args.goal)}.json"
 
     print(f"🔗 拆解 URL: {analyze_url}")
-    print("⏳ 正在拆解（约 1–4 分钟）…")
+    print("⏳ 正在拆解（约 1–4 分钟，取决于 LLM 响应）…")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -120,6 +125,27 @@ async def run_decompose(args: argparse.Namespace) -> dict:
             }"""
         )
 
+        edit_url = await page.evaluate(
+            """async () => {
+              const base = window.location.origin + window.location.pathname;
+              if (window.TeachAnyPBLAutomation?.createHandoff) {
+                try {
+                  return await window.TeachAnyPBLAutomation.createHandoff(base);
+                } catch (e) {
+                  console.warn('[PBL] handoff failed, fallback to pbl id', e);
+                }
+              }
+              const runId = window.TeachAnyPBLAutomation?.getRunId?.();
+              const u = new URL(base);
+              u.searchParams.delete('auto');
+              if (runId) {
+                u.searchParams.set('pbl', runId);
+                return u.toString();
+              }
+              return window.TeachAnyPBLAutomation?.getEditUrl?.(base) || base;
+            }"""
+        )
+
         print("🖼️  正在生成长图…")
         png_bytes = await page.evaluate(
             """async () => {
@@ -141,6 +167,7 @@ async def run_decompose(args: argparse.Namespace) -> dict:
         "constraints": args.constraints,
         "image": str(png_path),
         "edit_url": edit_url,
+        "edit_url_fallback": build_edit_url(args),
         "summary": result_summary,
     }
     meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -159,8 +186,8 @@ def main() -> None:
     parser.add_argument("--duration", default="")
     parser.add_argument("--constraints", default="")
     parser.add_argument("-o", "--output", default=".", help="输出目录")
-    parser.add_argument("--base-url", default=DEFAULT_BASE, help="PBL 页面地址")
-    parser.add_argument("--json-only", action="store_true", help="仅打印 JSON")
+    parser.add_argument("--base-url", default=DEFAULT_BASE, help="PBL 页面地址（默认线上 teachany.cn）")
+    parser.add_argument("--json-only", action="store_true", help="仅打印结果 JSON 到 stdout")
     args = parser.parse_args()
 
     import asyncio

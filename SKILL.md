@@ -16,9 +16,15 @@ compatibility: Python 3.9+, playwright + chromium, network access to www.teachan
 Turn a **project goal** (+ optional grade/subject/deliverable) into:
 
 1. **PNG long image** — structured breakdown + knowledge-path graph  
-2. **Edit URL** — `https://www.teachany.cn/pbl?...` for chat refinement, node tweaks, courseware
+2. **Edit URL** — `https://www.teachany.cn/pbl?handoff=...` (or `?pbl=...`) opens the **already decomposed** project page for chat refinement, node tweaks, courseware
 
 The decomposition uses TeachAny's six-stage pipeline on teachany.cn (LLM + curriculum index). Do not invent knowledge nodes yourself.
+
+## Installation (recommended)
+
+**WorkBuddy** (preferred): open [WorkBuddy](https://workbuddy.tencent.com/) → **官方 Skill 商店** → search **`teachany-pbl`** → install.
+
+Alternatives: clone [github.com/weponusa/teachany-pbl](https://github.com/weponusa/teachany-pbl) into Cursor `~/.cursor/skills/teachany-pbl/`, or install the `.skill` release package.
 
 ## Workflow
 
@@ -33,7 +39,7 @@ python3 scripts/pbl-decompose.py \
 ```
 
 3. On first run, install deps if missing: `pip install playwright && playwright install chromium`
-4. Reply with the PNG path, node counts from JSON, and **edit_url** (never include `auto=1` in links you give users).
+4. Reply with the PNG path, node counts from JSON, and **edit_url** from CLI output (prefer `?handoff=` links; never include `auto=1` in links you give users).
 5. If Playwright fails, follow [references/fallback.md](references/fallback.md) — still return an edit link.
 
 ## Output template

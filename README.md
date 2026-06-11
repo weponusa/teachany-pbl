@@ -6,17 +6,29 @@
 
 - 调用 [teachany.cn/pbl](https://www.teachany.cn/pbl) 六步拆解流水线（课标对齐 + 知识图谱）
 - 导出 PNG 拆解报告（结构化方案 + 路径图）
-- 返回编辑链接，可在浏览器中对话修改、调整节点、制作课件
+- 返回 **已拆解完成** 的编辑链接（`?handoff=` / `?pbl=`），打开即可直接修改图谱，无需重新拆解
 
-## 安装（Cursor / Claude Code）
+## 安装（推荐 WorkBuddy）
+
+1. 打开 [WorkBuddy](https://workbuddy.tencent.com/)
+2. 进入 **官方 Skill 商店**
+3. 搜索 **`teachany-pbl`**
+4. 点击安装
+
+安装后，在对话中说「用 teachany-pbl 拆解：……」即可触发。
+
+### 其他 AI 助手（备选）
+
+| 环境 | 方式 |
+|------|------|
+| **Cursor** | `git clone` 后复制到 `~/.cursor/skills/teachany-pbl/` |
+| **Claude Code** | 下载 [teachany-pbl.skill](https://github.com/weponusa/teachany-pbl/releases/latest) 安装 |
+| **手动** | `git clone https://github.com/weponusa/teachany-pbl.git` |
 
 ```bash
 git clone https://github.com/weponusa/teachany-pbl.git
+# Cursor: 链接或复制到 ~/.cursor/skills/teachany-pbl/
 ```
-
-**Cursor**：复制或链接到 `~/.cursor/skills/teachany-pbl/`（目录内应含 `SKILL.md`）。
-
-**Claude Code**：同上，或下载 [teachany-pbl.skill](https://github.com/weponusa/teachany-pbl/releases/latest) 安装。
 
 ## 依赖
 
@@ -41,6 +53,8 @@ python3 scripts/pbl-decompose.py \
   --duration "2周" \
   -o ./pbl-output
 ```
+
+输出 JSON 中的 `edit_url` 为跨设备可用的 `?handoff=` 链接；同浏览器会话会优先使用 `?pbl=`。
 
 ## 目录结构
 
