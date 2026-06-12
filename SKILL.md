@@ -1,55 +1,57 @@
 ---
 name: teachany-pbl
 description: >-
-  Runs TeachAny PBL project decomposition: knowledge-path graph, PNG report, and
-  editable teachany.cn link. Use whenever the user wants PBL breakdown, project-based
-  learning paths, curriculum mapping for a project, 项目式学习拆解, 知识路径图谱,
-  teachany-pbl, or describes a cross-disciplinary student project (研学、水火箭、
-  购车对比、智能温室、义卖策划) — even if they only give a one-line project goal.
-  Do not use for generic lesson plans without a project deliverable, or for creating
-  interactive courseware HTML (use TeachAny courseware skill instead).
+  Decompose a PBL project goal via teachany.cn into a knowledge-path PNG and
+  editable link. Use for 项目式学习拆解、知识路径图谱、PBL 拆解、课标对齐项目路径.
+  Not for generic lesson plans or interactive courseware HTML.
 compatibility: Python 3.9+, playwright + chromium, network access to www.teachany.cn
 ---
 
 # TeachAny PBL
 
-Turn a **project goal** (+ optional grade/subject/deliverable) into:
+将**项目任务**（+ 可选学段/学科/产出）拆解为：
 
-1. **PNG long image** — structured breakdown + knowledge-path graph  
-2. **Edit URL** — `https://www.teachany.cn/pbl?handoff=...` (or `?pbl=...`) opens the **already decomposed** project page for chat refinement, node tweaks, courseware
+1. **PNG 长图** — 结构化蓝图 + 知识路径图谱  
+2. **编辑链接** — `https://www.teachany.cn/pbl?handoff=...`（或 `?pbl=...`），打开即为已拆解项目页
 
-The decomposition uses TeachAny's six-stage pipeline on teachany.cn (LLM + curriculum index). Do not invent knowledge nodes yourself.
+拆解由 teachany.cn 六阶段管线完成（LLM + 多课标索引）。**禁止**自行编造知识点节点或用手写列表代替 CLI 产出。
 
-## Installation (recommended)
+## 何时不用
 
-**WorkBuddy** (preferred): open [WorkBuddy](https://workbuddy.tencent.com/) → **官方 Skill 商店** → search **`teachany-pbl`** → install.
+- 只要普通教案、无项目交付物 → 不用本 skill  
+- 要生成交互课件 HTML → 用 TeachAny courseware skill  
+- 无法访问 teachany.cn / Playwright 安装失败 → 见 [references/fallback.md](references/fallback.md)
 
-Alternatives: clone [github.com/weponusa/teachany-pbl](https://github.com/weponusa/teachany-pbl) into Cursor `~/.cursor/skills/teachany-pbl/`, or install the `.skill` release package.
+## Workflow
 
-## Workflow（必须执行，禁止手搓图谱）
-
-**CRITICAL**: You MUST run `scripts/pbl-decompose.py` via Playwright against teachany.cn.  
-**NEVER** invent knowledge nodes, simplified bullet lists, or `?goal=` links as the primary deliverable — that is NOT TeachAny PBL.
-
-1. Parse the user's project task and optional fields (see [references/parameters.md](references/parameters.md)).
-2. **Always** run the bundled CLI from **this skill directory** (where `SKILL.md` lives):
+1. 从用户话术中提取参数（见 [references/parameters.md](references/parameters.md)）；缺省用默认值，**不必逐项追问**。  
+   `deliverable=other` 时加 `--deliverable-custom "自定义产出名"`。
+2. 在 **本 skill 目录**（`SKILL.md` 所在处）执行 CLI：
 
 ```bash
 python3 scripts/pbl-decompose.py \
   --goal "用户的项目任务原文" \
   --grade junior \
+  --subject science \
+  --deliverable design-proposal \
   -o ./pbl-output
 ```
 
-3. On first run, install deps if missing: `pip install playwright && playwright install chromium`
-4. Read `{output}/<slug>.json` — reply with:
-   - PNG path from `image`
-   - `summary.nodeCount`, `summary.hasBlueprint`
-   - **`edit_url` must contain `?handoff=`** (or `?pbl=`). If only `?goal=`, report handoff failure and retry CLI once.
-5. Show the PNG in chat when supported — this is the full report (结构化拆解 + 路径 + 图谱), not a self-written summary.
-6. Only if Playwright is impossible after retry, follow [references/fallback.md](references/fallback.md) and explicitly say the user must click「拆解项目路径」on the site.
+3. 首次缺依赖：`pip install playwright && playwright install chromium`  
+4. 读取输出 JSON（路径见下），向用户回复 PNG、`summary` 统计、`edit_url`。  
+5. **不要**在 CLI 已跑过的情况下由 Agent 再次自动重试同一命令；仅当 Playwright 完全不可用时走 fallback。  
+6. 耗时通常 **3–8 分钟**（复杂项目可能接近 10 分钟），告知用户耐心等待。
 
-## Output template
+### 输出文件（`-o` 目录下）
+
+| 文件 | 说明 |
+|------|------|
+| `{slug}.png` | 长图（`slug` 由 `--goal` 生成） |
+| `{slug}.json` | 元数据：`image`、`edit_url`、`handoff_source`、`summary` |
+
+`edit_url` 优先含 `?handoff=`；若为 `?pbl=` 亦可编辑；仅 `?goal=` 表示 handoff 失败，需说明用户打开后须再点「拆解项目路径」。
+
+## 回复模板
 
 ```markdown
 ## PBL 拆解结果
@@ -61,28 +63,23 @@ python3 scripts/pbl-decompose.py \
 - **图谱节点**：{nodeCount}（课标 {matched} · 外部 {external}）
 - **继续编辑**：[在 TeachAny 打开]({edit_url})
 
-在 TeachAny 可对话修改拆解、调整知识点、一键制作课件。
+可在 TeachAny 对话修改拆解、调整知识点、一键制作课件。
 ```
 
-Show the PNG in chat when the environment supports images.
+环境支持时展示 PNG 长图。
 
-## Why not hand-write the graph?
+## 示例
 
-TeachAny runs a six-stage server pipeline (decompose → filter → match → verify → graph). A plain LLM reply or `?goal=` link shows the **empty form page** — not the finished project. The CLI waits for the full page render and saves a `?handoff=` link so users land on the **completed** editor.
+用户：「初中科学，设计水火箭并安全发射，要工程原型」
 
-## Examples
+```bash
+python3 scripts/pbl-decompose.py \
+  --goal "设计一款水火箭并完成安全发射" \
+  --grade junior --subject science --deliverable engineering-prototype \
+  -o ./pbl-output
+```
 
-**Example 1**
+## 参考
 
-Input: 帮我拆一下初中研学路线规划，4周，要策划案  
-Command: `python3 scripts/pbl-decompose.py --goal "设计班级研学路线…" --grade junior --deliverable design-proposal --duration "4周" -o ./pbl-output`
-
-**Example 2**
-
-Input: PBL 家庭购车对比，高中，决策表  
-Command: `python3 scripts/pbl-decompose.py --goal "家庭购车方案对比…" --grade senior --deliverable decision-table -o ./pbl-output`
-
-## Additional resources
-
-- Parameter reference: [references/parameters.md](references/parameters.md)
-- Playwright unavailable: [references/fallback.md](references/fallback.md)
+- 参数表：[references/parameters.md](references/parameters.md)  
+- Playwright 不可用 / 网络异常：[references/fallback.md](references/fallback.md)
